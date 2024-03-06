@@ -18,4 +18,36 @@
 <p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
 ]]></content>
   </entry>
+  <entry>
+    <title>nginx反代跳过网站备案</title>
+    <url>/_posts/51114/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>今天搞了个国内的服务器，然后想搞个域名指向服务器，但是我身份证过期了，一星期前申请了换证还没那么快到，所以备案不了。</p>
+<p>怎么办呢？</p>
+<p>突然想起我有一台用学生认证白嫖的新加坡服务器，众所周知，域名指向国外的服务器是不用备案的，还可以加 https，所以我灵机一动：可以用域名指向新加坡的服务器，再用代理或者其他手段把该连接交给国内的服务器，就相当于用新加坡的服务器当跳板机，访问国内的服务器。</p>
+<p>拓扑图如下</p>
+<p><img src="/nginx%E5%8F%8D%E4%BB%A3%E8%B7%B3%E8%BF%87%E7%BD%91%E7%AB%99%E5%A4%87%E6%A1%88.assets/tXr5AzlG.png"></p>
+<p>目前就想出来了两个方案：</p>
+<ul>
+<li>方案一：新加坡服务器安装 nginx，通过反向代理把请求连接转发给国内服务器</li>
+<li>方案二：用 frp 内网穿透</li>
+</ul>
+<p>方案一我试过了是可行的，没有跨域的问题，网上查了下说别人也是主要用反向代理来解决跨域问题的；方案二的话还没试过，不知道。</p>
+<h2 id="动手"><a href="#动手" class="headerlink" title="动手"></a>动手</h2><ol>
+<li>首先国内服务器安装好博客，并能通过公网 IP 访问网站</li>
+<li>新加坡服务器安装 nginx，我这里用的是包安装</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt install nginx -y</span><br></pre></td></tr></table></figure>
+
+<p>编辑配置文件，增加下面这一段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    #SSL 访问端口号为 443</span><br><span class="line">    listen 443 ssl;</span><br><span class="line">	#填写绑定证书的域名</span><br><span class="line">	server_name www.admsec.top;</span><br><span class="line"> 	#证书文件名称</span><br><span class="line">    ssl_certificate /opt/cert/xxx.xxx.xxx.pem;</span><br><span class="line"> 	#私钥文件名称</span><br><span class="line">    ssl_certificate_key /opt/cert/xxx.xxx.xxx.key;</span><br><span class="line">    ssl_session_timeout 5m;</span><br><span class="line"> 	#请按照以下协议配置</span><br><span class="line">    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;</span><br><span class="line"> 	#请按照以下套件配置，配置加密套件，写法遵循 openssl 标准。</span><br><span class="line">    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;</span><br><span class="line">    ssl_prefer_server_ciphers on;</span><br><span class="line">    location / &#123;</span><br><span class="line">        #配置反向代理  因为hexo默认端口为4000，故使其指向</span><br><span class="line">        proxy_pass http://xxx.xxx.xxx.xxx/;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">server &#123;</span><br><span class="line">	listen 80;</span><br><span class="line">	#填写绑定证书的域名</span><br><span class="line">	server_name xxx.xxx.xxx;</span><br><span class="line">	#把http的域名请求转成https</span><br><span class="line">	return 301 https://xxx.xxx.xxx;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>启动 nginx，成功！</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>nginx</tag>
+        <tag>反向代理</tag>
+      </tags>
+  </entry>
 </search>
